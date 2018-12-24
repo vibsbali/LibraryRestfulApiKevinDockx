@@ -4,6 +4,8 @@ using Library.Api.Models;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Internal;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,7 +38,7 @@ namespace Library.Api
       }
 
       // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-      public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, LibraryContext libraryContext)
+      public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILogger<Startup> logger)
       {
          if (env.IsDevelopment())
          {
@@ -44,7 +46,14 @@ namespace Library.Api
          }
          else
          {
-            app.UseExceptionHandler();
+            app.UseExceptionHandler(appBuilder =>
+            {
+               appBuilder.Run(async context =>
+               {
+                  context.Response.StatusCode = 500;
+                  await context.Response.WriteAsync("An unexpected fault happened. Try again later");
+               });
+            });
          }
 
          AutoMapper.Mapper.Initialize(cfg =>
