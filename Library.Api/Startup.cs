@@ -1,4 +1,6 @@
 ﻿using Library.Api.Entities;
+using Library.Api.Helpers;
+using Library.Api.Models;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,6 +46,15 @@ namespace Library.Api
          {
             app.UseExceptionHandler();
          }
+
+         AutoMapper.Mapper.Initialize(cfg =>
+         {
+            cfg.CreateMap<Author, AuthorDto>()
+               .ForMember(dest => dest.Name, map => map.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+               .ForMember(dest => dest.Age,
+                  map => map.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
+         });
+
          app.UseMvc();
       }
    }
