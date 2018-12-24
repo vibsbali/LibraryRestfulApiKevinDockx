@@ -62,6 +62,8 @@ namespace Library.Api
                .ForMember(dest => dest.Name, map => map.MapFrom(src => $"{src.FirstName} {src.LastName}"))
                .ForMember(dest => dest.Age,
                   map => map.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
+
+            cfg.CreateMap<Book, BookDto>();
          });
 
          app.UseMvc();
