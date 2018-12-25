@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using Library.Api.Entities;
 using Library.Api.Models;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -35,8 +36,9 @@ namespace Library.Api.Controllers
 
       }
 
-      [HttpGet("{id}")]
-      public IActionResult GetAuthors(Guid id)
+      //By Assigning Name to this method we can use it by name 
+      [HttpGet("{id}", Name = "GetAuthor")]
+      public IActionResult GetAuthor(Guid id)
       {
          var author = _libraryRepository.GetAuthor(id);
 
@@ -47,6 +49,31 @@ namespace Library.Api.Controllers
 
          var authorDto = Mapper.Map<AuthorDto>(author);
          return Ok(authorDto);
+      }
+
+      [HttpPost]
+      public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
+      {
+         if (author == null)
+         {
+            return BadRequest();
+         }
+
+         var authorEntity = Mapper.Map<Author>(author);
+         _libraryRepository.AddAuthor(authorEntity);
+         if (!_libraryRepository.Save())
+         {
+            //global exception handler will catch the error
+            throw new ApplicationException("Creating an author failed on save");
+            //return StatusCode(500, "A problem happened with handling your request");
+         }
+
+         var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
+
+         //GetAuthor is name given to method GetAuthor
+         //Id is the Id for Author
+         //authorToReturn will be serialised in the body
+         return CreatedAtRoute("GetAuthor", new {id = authorToReturn.Id}, authorToReturn);
       }
    }
 }

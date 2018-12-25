@@ -68,6 +68,8 @@ namespace Library.Api
                   map => map.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
 
             cfg.CreateMap<Book, BookDto>();
+
+            cfg.CreateMap<AuthorForCreationDto, Author>();
          });
 
          app.UseMvc();
