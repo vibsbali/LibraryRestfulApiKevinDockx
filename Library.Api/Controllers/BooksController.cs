@@ -4,6 +4,7 @@ using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Models;
 using Library.Api.Services;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -130,6 +131,56 @@ namespace Library.Api.Controllers
          if (!_libraryRepository.Save())
          {
             throw new Exception($"Updating book {id} for author {authorId} failed on save.");
+         }
+
+         return NoContent();
+      }
+
+      //For patch read JsonPatch Specification
+      //Content-Type in Headers is application/json-patch+json and request looks like so for replacing title
+      /*
+       *[
+            {
+	            "op": "replace",
+	            "path": "/title",
+	            "value": "A Game of Thrones"
+            }	
+         ]
+       *
+       */
+      [HttpPatch("{id}")]
+      public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid id,
+         [FromBody] JsonPatchDocument<BookForUpdateDto> patchDocument)
+      {
+         if (patchDocument == null)
+         {
+            return BadRequest();
+         }
+
+         if (!_libraryRepository.AuthorExists(authorId))
+         {
+            return NotFound();
+         }
+
+         var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, id);
+         if (bookForAuthorFromRepo == null)
+         {
+            return NotFound();
+         }
+
+         //Apply Patch Document
+         BookForUpdateDto bookToPatch = Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
+
+         patchDocument.ApplyTo(bookToPatch);
+
+         //add validation
+
+         Mapper.Map(bookToPatch, bookForAuthorFromRepo);
+         _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
+
+         if (!_libraryRepository.Save())
+         {
+            throw new Exception($"Patching book {id} for author {authorId} failed on save.");
          }
 
          return NoContent();
