@@ -73,7 +73,7 @@ namespace Library.Api.Services
       {
          return _context.Authors.Where(a => authorIds.Contains(a.Id))
             .OrderBy(a => a.FirstName)
-            .OrderBy(a => a.LastName)
+            .ThenBy(a => a.LastName)
             .ToList();
       }
 
@@ -84,8 +84,7 @@ namespace Library.Api.Services
 
       public Book GetBookForAuthor(Guid authorId, Guid bookId)
       {
-         return _context.Books
-            .Where(b => b.AuthorId == authorId && b.Id == bookId).FirstOrDefault();
+         return _context.Books.FirstOrDefault(b => b.AuthorId == authorId && b.Id == bookId);
       }
 
       public IEnumerable<Book> GetBooksForAuthor(Guid authorId)
