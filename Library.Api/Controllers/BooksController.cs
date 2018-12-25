@@ -90,6 +90,7 @@ namespace Library.Api.Controllers
                 return NotFound();
             }
 
+            //EF has cascade delete on by default. When we delete author the books are deleted automatically
             _libraryRepository.DeleteBook(bookForAuthorFromRepo);
 
             if (!_libraryRepository.Save())
