@@ -5,6 +5,7 @@ using Library.Api.Entities;
 using Library.Api.Models;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Library.Api.Controllers
 {
@@ -12,10 +13,12 @@ namespace Library.Api.Controllers
     public class BooksController : ControllerBase
     {
         private readonly ILibraryRepository _libraryRepository;
+        private readonly ILogger<BooksController> _logger;
 
-        public BooksController(ILibraryRepository libraryRepository)
+        public BooksController(ILibraryRepository libraryRepository, ILogger<BooksController> logger)
         {
             _libraryRepository = libraryRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -72,5 +75,31 @@ namespace Library.Api.Controllers
             var bookToReturn = Mapper.Map<BookDto>(book);
             return CreatedAtRoute("GetBookForAuthor", new {authorId = authorId, bookId = book.Id}, bookToReturn);
         }
-    }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
+        {
+            if (!_libraryRepository.AuthorExists(authorId))
+            {
+                return NotFound();
+            }
+
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, id);
+            if (bookForAuthorFromRepo == null)
+            {
+                return NotFound();
+            }
+
+            _libraryRepository.DeleteBook(bookForAuthorFromRepo);
+
+            if (!_libraryRepository.Save())
+            {
+                throw new Exception($"Deleting book {id} for author {authorId} failed on save.");
+            }
+
+            _logger.LogInformation(100, $"Book {id} for author {authorId} was deleted.");
+
+            return NoContent();
+        }
+   }
 }
