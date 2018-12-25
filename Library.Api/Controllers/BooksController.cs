@@ -33,7 +33,7 @@ namespace Library.Api.Controllers
             return Ok(booksForAuthor);
         }
 
-        [HttpGet("{bookId}")]
+        [HttpGet("{bookId}", Name = "GetBookForAuthor")]
         public IActionResult GetBookForAuthor(Guid authorId, Guid bookId)
         {
             var bookFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
@@ -45,6 +45,32 @@ namespace Library.Api.Controllers
 
             var result = Mapper.Map<BookDto>(bookFromRepo);
             return Ok(result);
+        }
+
+        [HttpPost]
+        //[FromBody] signifies that the incoming request should be de-serialised into bookDto dto
+        public IActionResult CreateBookForAuthor(Guid authorId, [FromBody] BookForCreationDto bookDto)
+        {
+            if (bookDto == null)
+            {
+                return BadRequest();
+            }
+
+            if (!_libraryRepository.AuthorExists(authorId))
+            {
+                return NotFound();
+            }
+
+            var book = Mapper.Map<Book>(bookDto);
+             
+            _libraryRepository.AddBookForAuthor(authorId, book);
+            if (!_libraryRepository.Save())
+            {
+                throw new Exception($"Creating a book for author {authorId} failed on save.");
+            }
+
+            var bookToReturn = Mapper.Map<BookDto>(book);
+            return CreatedAtRoute("GetBookForAuthor", new {authorId = authorId, bookId = book.Id}, bookToReturn);
         }
     }
 }
