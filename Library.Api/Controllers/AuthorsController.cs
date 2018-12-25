@@ -5,6 +5,7 @@ using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Models;
 using Library.Api.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -74,6 +75,17 @@ namespace Library.Api.Controllers
          //Id is the Id for Author
          //authorToReturn will be serialised in the body
          return CreatedAtRoute("GetAuthor", new {id = authorToReturn.Id}, authorToReturn);
+      }
+
+      [HttpPost("{id}")]
+      public IActionResult BlockAuthorCreation(Guid id)
+      {
+         if (_libraryRepository.AuthorExists(id))
+         {
+            return new StatusCodeResult(StatusCodes.Status409Conflict);
+         }
+
+         return NotFound();
       }
    }
 }
