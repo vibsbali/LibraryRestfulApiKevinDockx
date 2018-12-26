@@ -194,10 +194,23 @@ namespace Library.Api.Controllers
 
          //Apply Patch Document
          BookForUpdateDto bookToPatch = Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
-
-         patchDocument.ApplyTo(bookToPatch);
-
+         
          //add validation
+         //since we are using JsonPatchDocument and not BookForUpdateDto we need to add custom validation
+         //any errors on ModelState will apply to patch document
+         patchDocument.ApplyTo(bookToPatch, ModelState);
+         if (bookToPatch.Title == bookToPatch.Description)
+         {
+            ModelState.AddModelError(nameof(BookForUpdateDto), "The provided description should be different from the title.");
+         }
+
+         //This will trigger validation and any errors will end up in ModelState
+         TryValidateModel(bookToPatch);
+
+         if (!ModelState.IsValid)
+         {
+            return new UnprocessableEntityObjectResult(ModelState);
+         }
 
          Mapper.Map(bookToPatch, bookForAuthorFromRepo);
          _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
