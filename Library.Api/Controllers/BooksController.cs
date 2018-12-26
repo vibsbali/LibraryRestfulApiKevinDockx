@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Helpers;
-using Library.Api.Models;
 using Library.Api.Models.BookDtos;
 using Library.Api.Services;
 using Microsoft.AspNetCore.JsonPatch;
