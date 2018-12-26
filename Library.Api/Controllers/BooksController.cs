@@ -36,6 +36,7 @@ namespace Library.Api.Controllers
 
          var booksForAuthor = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
 
+         _logger.LogInformation(200, $"Return books for author {authorId}");
          return Ok(booksForAuthor);
       }
 

@@ -4,6 +4,7 @@ using Library.Api.Models;
 using Library.Api.Models.BookDtos;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http;
@@ -53,10 +54,16 @@ namespace Library.Api
          }
          else
          {
+            //this will handle all the 500 status codes 
             app.UseExceptionHandler(appBuilder =>
             {
                appBuilder.Run(async context =>
                {
+                  var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+                  if (exceptionHandlerFeature != null)
+                  {
+                     logger.LogError(500, exceptionHandlerFeature.Error, exceptionHandlerFeature.Error.Message);
+                  }
                   context.Response.StatusCode = 500;
                   await context.Response.WriteAsync("An unexpected fault happened. Try again later");
                });

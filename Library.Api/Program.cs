@@ -5,6 +5,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NLog.Web;
 
 namespace Library.Api
 {
@@ -20,6 +21,13 @@ namespace Library.Api
       public static IWebHost BuildWebHost(string[] args) =>
           WebHost.CreateDefaultBuilder(args)
               .UseStartup<Startup>()
+             .ConfigureLogging(logging =>
+             {
+                logging.ClearProviders();
+                //Overridden in appsettings.json
+                logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+             })
+              .UseNLog()
               .Build();
 
       public static void InitializeDatabase(IWebHost host)
