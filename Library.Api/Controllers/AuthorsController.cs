@@ -33,7 +33,11 @@ namespace Library.Api.Controllers
       //Paging:    http://.../api/authors?pageNumber=1&pageSize=5
       //Ordering:  http://.../api/authors?orderBy=name
       //Sorting:   http://.../api/authors?orderBy=name
-      //Shaping:   http://.../api/authors?fields=id
+      //Shaping:   http://.../api/authors?fields=id,name (Data Shaping allow consumer to select resources fields)
+      //TODO following
+      //Include child resources : http://.../api/authors?expand=books  
+      //Shape included child resources : http://.../api/authors?fields=id,name,books.title
+      //Complex filters : http://.../api/authors?genere=contains('horror')
       [HttpGet(Name = "GetAuthors")]
       public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
       {
@@ -125,10 +129,16 @@ namespace Library.Api.Controllers
          }
       }
 
+      //Shaping:   http://.../api/authors/...{authorId}..?fields=id,name
       //By Assigning Name to this method we can use it by name 
       [HttpGet("{id}", Name = "GetAuthor")]
-      public IActionResult GetAuthor(Guid id)
+      public IActionResult GetAuthor(Guid id, [FromQuery] string fields)
       {
+         if (!_typeHelperService.TypeHasProperties<AuthorDto>(fields))
+         {
+            return BadRequest("Invalid fields in query string");
+         }
+
          var author = _libraryRepository.GetAuthor(id);
 
          if (author == null)
@@ -137,7 +147,7 @@ namespace Library.Api.Controllers
          }
 
          var authorDto = Mapper.Map<AuthorDto>(author);
-         return Ok(authorDto);
+         return Ok(authorDto.ShapeData(fields));
       }
 
       [HttpPost]
