@@ -17,12 +17,15 @@ namespace Library.Api.Controllers
       private readonly ILibraryRepository _libraryRepository;
       private readonly ILogger<AuthorsController> _logger;
       private readonly IPropertyMappingService _propertyMappingService;
+      private readonly ITypeHelperService _typeHelperService;
 
-      public AuthorsController(ILibraryRepository libraryRepository, ILogger<AuthorsController> logger, IPropertyMappingService propertyMappingService)
+      public AuthorsController(ILibraryRepository libraryRepository, ILogger<AuthorsController> logger, 
+         IPropertyMappingService propertyMappingService, ITypeHelperService typeHelperService)
       {
          _libraryRepository = libraryRepository;
          _logger = logger;
          _propertyMappingService = propertyMappingService;
+         _typeHelperService = typeHelperService;
       }
 
       //Filtering: http://.../api/authors?genre=Fantasy
@@ -30,6 +33,7 @@ namespace Library.Api.Controllers
       //Paging:    http://.../api/authors?pageNumber=1&pageSize=5
       //Ordering:  http://.../api/authors?orderBy=name
       //Sorting:   http://.../api/authors?orderBy=name
+      //Shaping:   http://.../api/authors?fields=id
       [HttpGet(Name = "GetAuthors")]
       public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
       {
@@ -41,6 +45,11 @@ namespace Library.Api.Controllers
          if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
          {
             return BadRequest("Invalid property in query string");
+         }
+
+         if (!_typeHelperService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
+         {
+            return BadRequest("Invalid fields in query string");
          }
 
          var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
@@ -66,7 +75,7 @@ namespace Library.Api.Controllers
             Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
          var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
-         return Ok(authors);
+         return Ok(authors.ShapeData(authorsResourceParameters.Fields));
 
          //exception has been factored into Startup.cs
          //return StatusCode(500, "An unexpected error has occured");
@@ -83,6 +92,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     fields = authorsResourceParameters.Fields,
                      orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,
@@ -93,6 +103,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     fields = authorsResourceParameters.Fields,
                      orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,
@@ -104,6 +115,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     fields = authorsResourceParameters.Fields,
                      orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,

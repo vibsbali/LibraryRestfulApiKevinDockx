@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Serialization;
 
 namespace Library.Api
 {
@@ -29,11 +30,15 @@ namespace Library.Api
       public void ConfigureServices(IServiceCollection services)
       {
          services.AddMvc(setupAction =>
-         {
-            setupAction.ReturnHttpNotAcceptable = true;
-            setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
-            setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
-         });
+            {
+               setupAction.ReturnHttpNotAcceptable = true;
+               setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
+               setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+            })
+            .AddJsonOptions(options =>
+            {
+               options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            });
 
          // register the DbContext on the container, getting the connection string from
          // appSettings (note: use this during development; in a production environment,
@@ -45,6 +50,8 @@ namespace Library.Api
          services.AddScoped<ILibraryRepository, LibraryRepository>();
 
          services.AddTransient<IPropertyMappingService, PropertyMappingService>();
+
+         services.AddTransient<ITypeHelperService, TypeHelperService>();
       }
 
       // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
