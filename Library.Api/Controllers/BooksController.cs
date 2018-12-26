@@ -4,6 +4,7 @@ using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Helpers;
 using Library.Api.Models;
+using Library.Api.Models.BookDtos;
 using Library.Api.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -122,6 +123,17 @@ namespace Library.Api.Controllers
          if (bookDto == null)
          {
             return BadRequest();
+         }
+
+         if (bookDto.Title == bookDto.Description)
+         {
+            ModelState.AddModelError(nameof(BookForUpdateDto), "The provided description should be different from the title.");
+         }
+
+         if (!ModelState.IsValid)
+         {
+            // return 422
+            return new UnprocessableEntityObjectResult(ModelState);
          }
 
          if (!_libraryRepository.AuthorExists(authorId))

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Library.Api.Models.BookDtos;
 
 namespace Library.Api.Models
 {
