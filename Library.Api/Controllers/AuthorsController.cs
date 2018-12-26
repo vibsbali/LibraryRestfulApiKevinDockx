@@ -24,18 +24,82 @@ namespace Library.Api.Controllers
          _logger = logger;
       }
 
-      [HttpGet]
+      //Filtering: http://.../api/authors?genre=Fantasy
+      //Searching: http://.../api/authors?searchQuery=King
+      //Paging:    http://.../api/authors?pageNumber=1&pageSize=5
+      [HttpGet(Name = "GetAuthors")]
       public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
       {
+         //Old implementation
+         //var authors = _libraryRepository.GetAuthors(authorsResourceParameters);
+         //var authorsDto = Mapper.Map<IEnumerable<AuthorDto>>(authors);
+         //return Ok(authorsDto.ToList());
 
-         var authors = _libraryRepository.GetAuthors(authorsResourceParameters);
-         var authorsDto = Mapper.Map<IEnumerable<AuthorDto>>(authors);
+         var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
+         var previousPageLink = authorsFromRepo.HasPrevious ?
+            CreateAuthorsResourceUri(authorsResourceParameters,
+               ResourceUriType.PreviousPage) : null;
 
-         return Ok(authorsDto.ToList());
+         var nextPageLink = authorsFromRepo.HasNext ?
+            CreateAuthorsResourceUri(authorsResourceParameters,
+               ResourceUriType.NextPage) : null;
+
+         var paginationMetadata = new
+         {
+            totalCount = authorsFromRepo.TotalCount,
+            pageSize = authorsFromRepo.PageSize,
+            currentPage = authorsFromRepo.CurrentPage,
+            totalPages = authorsFromRepo.TotalPages,
+            previousPageLink = previousPageLink,
+            nextPageLink = nextPageLink
+         };
+
+         Response.Headers.Add("X-Pagination",
+            Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
+
+         var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
+         return Ok(authors);
 
          //exception has been factored into Startup.cs
          //return StatusCode(500, "An unexpected error has occured");
 
+      }
+
+      private string CreateAuthorsResourceUri(
+         AuthorsResourceParameters authorsResourceParameters,
+         ResourceUriType type)
+      {
+         switch (type)
+         {
+            case ResourceUriType.PreviousPage:
+               return Url.Link("GetAuthors",
+                  new
+                  {
+                     searchQuery = authorsResourceParameters.SearchQuery,
+                     genre = authorsResourceParameters.Genre,
+                     pageNumber = authorsResourceParameters.PageNumber - 1,
+                     pageSize = authorsResourceParameters.PageSize
+                  });
+            case ResourceUriType.NextPage:
+               return Url.Link("GetAuthors",
+                  new
+                  {
+                     searchQuery = authorsResourceParameters.SearchQuery,
+                     genre = authorsResourceParameters.Genre,
+                     pageNumber = authorsResourceParameters.PageNumber + 1,
+                     pageSize = authorsResourceParameters.PageSize
+                  });
+
+            default:
+               return Url.Link("GetAuthors",
+                  new
+                  {
+                     searchQuery = authorsResourceParameters.SearchQuery,
+                     genre = authorsResourceParameters.Genre,
+                     pageNumber = authorsResourceParameters.PageNumber,
+                     pageSize = authorsResourceParameters.PageSize
+                  });
+         }
       }
 
       //By Assigning Name to this method we can use it by name 
@@ -75,7 +139,7 @@ namespace Library.Api.Controllers
          //GetAuthor is name given to method GetAuthor
          //Id is the Id for Author
          //authorToReturn will be serialised in the body
-         return CreatedAtRoute("GetAuthor", new {id = authorToReturn.Id}, authorToReturn);
+         return CreatedAtRoute("GetAuthor", new { id = authorToReturn.Id }, authorToReturn);
       }
 
       [HttpPost("{id}")]
