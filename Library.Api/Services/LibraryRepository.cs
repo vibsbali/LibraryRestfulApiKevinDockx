@@ -10,10 +10,11 @@ namespace Library.Api.Services
    public class LibraryRepository : ILibraryRepository
    {
       private readonly LibraryContext _context;
-
-      public LibraryRepository(LibraryContext context)
+      private readonly IPropertyMappingService _propertyMappingService;
+      public LibraryRepository(LibraryContext context, IPropertyMappingService propertyMappingService)
       {
          _context = context;
+         _propertyMappingService = propertyMappingService;
       }
 
       public void AddAuthor(Author author)
@@ -75,11 +76,14 @@ namespace Library.Api.Services
          //   .Take(authorsResourceParameters.PageSize)
          //   .ToList();
 
+         //var collectionBeforePaging =
+         //   _context.Authors
+         //      .OrderBy(a => a.FirstName)
+         //      .ThenBy(a => a.LastName)
+         //      .AsQueryable();
+
          var collectionBeforePaging =
-            _context.Authors
-               .OrderBy(a => a.FirstName)
-               .ThenBy(a => a.LastName)
-               .AsQueryable();
+            _context.Authors.ApplySort(authorsResourceParameters.OrderBy, _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
 
          if (!string.IsNullOrEmpty(authorsResourceParameters.Genre))
          {

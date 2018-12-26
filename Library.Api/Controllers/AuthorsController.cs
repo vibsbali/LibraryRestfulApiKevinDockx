@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Helpers;
@@ -17,16 +16,20 @@ namespace Library.Api.Controllers
    {
       private readonly ILibraryRepository _libraryRepository;
       private readonly ILogger<AuthorsController> _logger;
+      private readonly IPropertyMappingService _propertyMappingService;
 
-      public AuthorsController(ILibraryRepository libraryRepository, ILogger<AuthorsController> logger)
+      public AuthorsController(ILibraryRepository libraryRepository, ILogger<AuthorsController> logger, IPropertyMappingService propertyMappingService)
       {
          _libraryRepository = libraryRepository;
          _logger = logger;
+         _propertyMappingService = propertyMappingService;
       }
 
       //Filtering: http://.../api/authors?genre=Fantasy
       //Searching: http://.../api/authors?searchQuery=King
       //Paging:    http://.../api/authors?pageNumber=1&pageSize=5
+      //Ordering:  http://.../api/authors?orderBy=name
+      //Sorting:   http://.../api/authors?orderBy=name
       [HttpGet(Name = "GetAuthors")]
       public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
       {
@@ -34,6 +37,11 @@ namespace Library.Api.Controllers
          //var authors = _libraryRepository.GetAuthors(authorsResourceParameters);
          //var authorsDto = Mapper.Map<IEnumerable<AuthorDto>>(authors);
          //return Ok(authorsDto.ToList());
+
+         if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+         {
+            return BadRequest("Invalid property in query string");
+         }
 
          var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
          var previousPageLink = authorsFromRepo.HasPrevious ?
@@ -75,6 +83,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,
                      pageNumber = authorsResourceParameters.PageNumber - 1,
@@ -84,6 +93,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,
                      pageNumber = authorsResourceParameters.PageNumber + 1,
@@ -94,6 +104,7 @@ namespace Library.Api.Controllers
                return Url.Link("GetAuthors",
                   new
                   {
+                     orderby = authorsResourceParameters.OrderBy,
                      searchQuery = authorsResourceParameters.SearchQuery,
                      genre = authorsResourceParameters.Genre,
                      pageNumber = authorsResourceParameters.PageNumber,
