@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Helpers;
 using Library.Api.Models.BookDtos;
+using Library.Api.Models.HateosLinks;
 using Library.Api.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +25,7 @@ namespace Library.Api.Controllers
          _logger = logger;
       }
 
-      [HttpGet]
+      [HttpGet(Name = "GetBooksForAuthor")]
       public IActionResult GetBooksForAuthor(Guid authorId)
       {
          if (!_libraryRepository.AuthorExists(authorId))
@@ -35,8 +37,16 @@ namespace Library.Api.Controllers
 
          var booksForAuthor = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
 
+         booksForAuthor = booksForAuthor.Select(book =>
+         {
+            book = CreateLinksForBook(book);
+            return book;
+         });
+
+         var wrapper = new LinkedCollectionResourceWrapperDto<BookDto>(booksForAuthor);
+
          _logger.LogInformation(200, $"Return books for author {authorId}");
-         return Ok(booksForAuthor);
+         return Ok(CreateLinksForBooks(wrapper));
       }
 
       [HttpGet("{bookId}", Name = "GetBookForAuthor")]
@@ -50,7 +60,7 @@ namespace Library.Api.Controllers
          }
 
          var result = Mapper.Map<BookDto>(bookFromRepo);
-         return Ok(result);
+         return Ok(CreateLinksForBook(result));
       }
 
       [HttpPost]
@@ -87,10 +97,10 @@ namespace Library.Api.Controllers
          }
 
          var bookToReturn = Mapper.Map<BookDto>(book);
-         return CreatedAtRoute("GetBookForAuthor", new { authorId = authorId, bookId = book.Id }, bookToReturn);
+         return CreatedAtRoute("GetBookForAuthor", new { authorId = authorId, bookId = book.Id }, CreateLinksForBook(bookToReturn));
       }
 
-      [HttpDelete("{id}")]
+      [HttpDelete("{id}", Name = "DeleteBookForAuthor")]
       public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
       {
          if (!_libraryRepository.AuthorExists(authorId))
@@ -117,7 +127,7 @@ namespace Library.Api.Controllers
          return NoContent();
       }
 
-      [HttpPut("{id}")]
+      [HttpPut("{id}", Name = "UpdateBookForAuthor")]
       public IActionResult UpdateBookForAuthor(Guid authorId, Guid id, [FromBody] BookForUpdateDto bookDto)
       {
          if (bookDto == null)
@@ -172,7 +182,7 @@ namespace Library.Api.Controllers
          ]
        *
        */
-      [HttpPatch("{id}")]
+      [HttpPatch("{id}", Name = "PartiallyUpdateBookForAuthor")]
       public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid id,
          [FromBody] JsonPatchDocument<BookForUpdateDto> patchDocument)
       {
@@ -221,6 +231,47 @@ namespace Library.Api.Controllers
          }
 
          return NoContent();
+      }
+
+      private BookDto CreateLinksForBook(BookDto book)
+      {
+         book.Links.Add(
+            new LinkDto(Url.Link("GetBookForAuthor",
+               new { authorId = book.AuthorId, bookId = book.Id }),
+            "self",
+            "GET"));
+
+         book.Links.Add(
+            new LinkDto(Url.Link("DeleteBookForAuthor",
+                  new { id = book.Id }),
+               "delete_book",
+               "DELETE"));
+
+         book.Links.Add(
+            new LinkDto(Url.Link("UpdateBookForAuthor",
+                  new { id = book.Id }),
+               "update_book",
+               "PUT"));
+
+         book.Links.Add(
+            new LinkDto(Url.Link("PartiallyUpdateBookForAuthor",
+                  new { id = book.Id }),
+               "partially_update_book",
+               "PATCH"));
+
+         return book;
+      }
+
+      private LinkedCollectionResourceWrapperDto<BookDto> CreateLinksForBooks(
+         LinkedCollectionResourceWrapperDto<BookDto> booksWrapper)
+      {
+         // link to self
+         booksWrapper.Links.Add(
+            new LinkDto(Url.Link("GetBooksForAuthor", new { }),
+               "self",
+               "GET"));
+
+         return booksWrapper;
       }
    }
 }
