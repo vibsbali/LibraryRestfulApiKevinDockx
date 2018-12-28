@@ -4,6 +4,7 @@ using AutoMapper;
 using Library.Api.Entities;
 using Library.Api.Helpers;
 using Library.Api.Models;
+using Library.Api.Models.AuthorDtos;
 using Library.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

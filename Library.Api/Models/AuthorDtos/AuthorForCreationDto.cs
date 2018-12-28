@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Library.Api.Models.BookDtos;
 
-namespace Library.Api.Models
+namespace Library.Api.Models.AuthorDtos
 {
    public class AuthorForCreationDto
    {

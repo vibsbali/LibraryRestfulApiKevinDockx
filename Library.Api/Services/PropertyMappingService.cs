@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Library.Api.Entities;
 using Library.Api.Models;
+using Library.Api.Models.AuthorDtos;
 
 namespace Library.Api.Services
 {

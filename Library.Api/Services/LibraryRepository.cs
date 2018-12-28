@@ -4,6 +4,7 @@ using System.Linq;
 using Library.Api.Entities;
 using Library.Api.Helpers;
 using Library.Api.Models;
+using Library.Api.Models.AuthorDtos;
 
 namespace Library.Api.Services
 {
