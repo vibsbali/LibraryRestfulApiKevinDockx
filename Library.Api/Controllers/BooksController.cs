@@ -63,7 +63,7 @@ namespace Library.Api.Controllers
          return Ok(CreateLinksForBook(result));
       }
 
-      [HttpPost]
+      [HttpPost(Name = "CreateBookForAuthor")]
       //[FromBody] signifies that the incoming request should be de-serialised into bookDto dto
       public IActionResult CreateBookForAuthor(Guid authorId, [FromBody] BookForCreationDto bookDto)
       {
