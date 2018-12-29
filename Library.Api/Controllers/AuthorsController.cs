@@ -224,12 +224,47 @@ namespace Library.Api.Controllers
 
          linkedResourceToReturn.Add("links", links);
 
-         return CreatedAtRoute("GetAuthor", new { id = linkedResourceToReturn["id"] }, linkedResourceToReturn);
+         return CreatedAtRoute("GetAuthor", new { id = linkedResourceToReturn["Id"] }, linkedResourceToReturn);
 
          //GetAuthor is name given to method GetAuthor
          //Id is the Id for Author
          //authorToReturn will be serialised in the body
          //return CreatedAtRoute("GetAuthor", new { id = authorToReturn.Id }, authorToReturn);
+      }
+
+      //Version 2 with [{"key":"Content-Type","name":"Content-Type","value":"application/vnd.excentric.v2.hateoas+json","description":"","type":"text"}]
+      [HttpPost(Name = "CreateAuthor")]
+      [RequestHeaderMatchesMediaType("Content-Type",
+         new[]
+         {
+            "application/vnd.excentric.v2.hateoas+json",
+            "application/vnd.excentric.v2.hateoas+xml"
+         })]
+      public IActionResult CreateAuthor([FromBody] AuthorForCreationWithDateOfDeathDto author)
+      {
+         if (author == null)
+         {
+            return BadRequest();
+         }
+
+         var authorEntity = Mapper.Map<Author>(author);
+         _libraryRepository.AddAuthor(authorEntity);
+         if (!_libraryRepository.Save())
+         {
+            throw new ApplicationException("Creating an author failed on save");
+         }
+
+         var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
+
+         //we are passing null because no data shaping
+         var links = CreateLinksForAuthor(authorToReturn.Id, null);
+
+         var linkedResourceToReturn = authorToReturn.ShapeData(null)
+            as IDictionary<string, object>;
+
+         linkedResourceToReturn.Add("links", links);
+
+         return CreatedAtRoute("GetAuthor", new { id = linkedResourceToReturn["Id"] }, linkedResourceToReturn);
       }
 
       [HttpPost("{id}")]

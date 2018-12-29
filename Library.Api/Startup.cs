@@ -34,16 +34,25 @@ namespace Library.Api
          services.AddMvc(setupAction =>
             {
                setupAction.ReturnHttpNotAcceptable = true;
-               setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
+               
                setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+               
+               //add custom input media type for json and xml
+               setupAction.InputFormatters
+                  .OfType<JsonInputFormatter>().First()
+                  .SupportedMediaTypes.Add("application/vnd.excentric.v2.hateoas+json");
+               
+               setupAction.InputFormatters
+                  .OfType<XmlDataContractSerializerInputFormatter>().First()
+                  .SupportedMediaTypes.Add("application/vnd.excentric.v2.hateoas+xml");
 
+               setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                //add custom media type
                setupAction.OutputFormatters
                   .OfType<JsonOutputFormatter>().First()
                   .SupportedMediaTypes.Add("application/vnd.excentric.hateoas+json");
-                                       
-
             })
+            .AddXmlDataContractSerializerFormatters()
             .AddJsonOptions(options =>
             {
                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
@@ -93,11 +102,13 @@ namespace Library.Api
             cfg.CreateMap<Author, AuthorDto>()
                .ForMember(dest => dest.Name, map => map.MapFrom(src => $"{src.FirstName} {src.LastName}"))
                .ForMember(dest => dest.Age,
-                  map => map.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
+                  map => map.MapFrom(src => src.DateOfBirth.GetCurrentAge(src.DateOfDeath)));
 
             cfg.CreateMap<Book, BookDto>();
 
             cfg.CreateMap<AuthorForCreationDto, Author>();
+
+            cfg.CreateMap<AuthorForCreationWithDateOfDeathDto, Author>();
 
             cfg.CreateMap<BookForCreationDto, Book>();
 

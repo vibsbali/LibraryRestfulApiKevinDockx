@@ -7,17 +7,22 @@ namespace Library.Api.Helpers
 {
    public static class DateTimeOffsetExtensions
    {
-       public static int GetCurrentAge(this DateTimeOffset dateTimeOffset)
-       {
-           var currentDate = DateTime.UtcNow;
-           int age = currentDate.Year - dateTimeOffset.Year;
+      public static int GetCurrentAge(this DateTimeOffset dateTimeOffset, DateTimeOffset? dateOfDeath)
+      {
+         var dateToCalculateUptill = DateTime.UtcNow;
+         if (dateOfDeath != null)
+         {
+            dateToCalculateUptill = dateOfDeath.Value.UtcDateTime;
+         }
 
-           if (currentDate < dateTimeOffset.AddYears(age))
-           {
-               age--;
-           }
+         int age = dateToCalculateUptill.Year - dateTimeOffset.Year;
 
-           return age;
-       }
+         if (dateToCalculateUptill < dateTimeOffset.AddYears(age))
+         {
+            age--;
+         }
+
+         return age;
+      }
    }
 }
