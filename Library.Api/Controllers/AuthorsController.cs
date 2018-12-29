@@ -42,13 +42,9 @@ namespace Library.Api.Controllers
       //Shape included child resources : http://.../api/authors?fields=id,name,books.title
       //Complex filters : http://.../api/authors?genere=contains('horror')
       [HttpGet(Name = "GetAuthors")]
-      public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
+      public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters,
+            [FromHeader(Name = "Accept")] string mediaType)
       {
-         //Old implementation
-         //var authors = _libraryRepository.GetAuthors(authorsResourceParameters);
-         //var authorsDto = Mapper.Map<IEnumerable<AuthorDto>>(authors);
-         //return Ok(authorsDto.ToList());
-
          if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
          {
             return BadRequest("Invalid property in query string");
@@ -60,64 +56,73 @@ namespace Library.Api.Controllers
          }
 
          var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
+         var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
+      
 
-         //The following is included in the links array
-         //var previousPageLink = authorsFromRepo.HasPrevious ?
-         //   CreateAuthorsResourceUri(authorsResourceParameters,
-         //      ResourceUriType.PreviousPage) : null;
-
-         //The following is included in the links array
-         //var nextPageLink = authorsFromRepo.HasNext ?
-         //   CreateAuthorsResourceUri(authorsResourceParameters,
-         //      ResourceUriType.NextPage) : null;
-
-         var paginationMetadata = new
+         //send json only when requested
+         if (mediaType == "application/vnd.excentric.hateoas+json")
          {
+            var paginationMetadata = new
+            {
+               totalCount = authorsFromRepo.TotalCount,
+               pageSize = authorsFromRepo.PageSize,
+               currentPage = authorsFromRepo.CurrentPage,
+               totalPages = authorsFromRepo.TotalPages
+            };
+
+            Response.Headers.Add("X-Pagination",
+               Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
+
+            var links = CreateLinksForAuthors(authorsResourceParameters, authorsFromRepo.HasNext,
+               authorsFromRepo.HasPrevious);
+
+            //returns an expando object
+            var shapedAuthors = authors.ShapeData(authorsResourceParameters.Fields);
+
+            var shapedAuthorsWithLinks = shapedAuthors.Select(author =>
+            {
+               var authorAsDictionary = author as IDictionary<string, object>;
+               var authorLinks = CreateLinksForAuthor(
+                  (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
+
+               authorAsDictionary.Add("links", authorLinks);
+
+               return authorAsDictionary;
+            });
+
+            //We could have used strongly typed like we did in books controller
+            var linkedCollectionResource = new
+            {
+               value = shapedAuthorsWithLinks,
+               links = links
+            };
+            
+            return Ok(linkedCollectionResource);
+         }
+
+         //otherwise do not include hateos links
+         var previousPageLink = authorsFromRepo.HasPrevious ?
+            CreateAuthorsResourceUri(authorsResourceParameters,
+               ResourceUriType.PreviousPage) : null;
+
+         var nextPageLink = authorsFromRepo.HasNext ?
+            CreateAuthorsResourceUri(authorsResourceParameters,
+               ResourceUriType.NextPage) : null;
+
+         var paginationMetadataWithLinks = new
+         { 
             totalCount = authorsFromRepo.TotalCount,
             pageSize = authorsFromRepo.PageSize,
             currentPage = authorsFromRepo.CurrentPage,
             totalPages = authorsFromRepo.TotalPages,
-            //previousPageLink = previousPageLink,
-            //nextPageLink = nextPageLink
+            previousPageLink = previousPageLink,
+            nextPageLink = nextPageLink,
          };
 
          Response.Headers.Add("X-Pagination",
-            Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
+            Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadataWithLinks));
 
-         var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
-
-         var links = CreateLinksForAuthors(authorsResourceParameters, authorsFromRepo.HasNext,
-            authorsFromRepo.HasPrevious);
-
-         //returns an expando object
-         var shapedAuthors = authors.ShapeData(authorsResourceParameters.Fields);
-
-         var shapedAuthorsWithLinks = shapedAuthors.Select(author =>
-         {
-            var authorAsDictionary = author as IDictionary<string, object>;
-            var authorLinks = CreateLinksForAuthor(
-               (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
-
-            authorAsDictionary.Add("links", authorLinks);
-
-            return authorAsDictionary;
-         });
-
-         //We could have used strongly typed like we did in books controller
-         var linkedCollectionResource = new
-         {
-            value = shapedAuthorsWithLinks,
-            //TODO the links should be part of headers and not resource
-            links = links
-         };
-
-         return Ok(linkedCollectionResource);
-
-         //return Ok(authors.ShapeData(authorsResourceParameters.Fields));
-
-         //exception has been factored into Startup.cs
-         //return StatusCode(500, "An unexpected error has occured");
-
+         return Ok(authors.ShapeData(authorsResourceParameters.Fields));
       }
 
       private string CreateAuthorsResourceUri(

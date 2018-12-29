@@ -1,4 +1,5 @@
-﻿using Library.Api.Entities;
+﻿using System.Linq;
+using Library.Api.Entities;
 using Library.Api.Helpers;
 using Library.Api.Models;
 using Library.Api.Models.AuthorDtos;
@@ -35,6 +36,13 @@ namespace Library.Api
                setupAction.ReturnHttpNotAcceptable = true;
                setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+
+               //add custom media type
+               setupAction.OutputFormatters
+                  .OfType<JsonOutputFormatter>().First()
+                  .SupportedMediaTypes.Add("application/vnd.excentric.hateoas+json");
+                                       
+
             })
             .AddJsonOptions(options =>
             {
