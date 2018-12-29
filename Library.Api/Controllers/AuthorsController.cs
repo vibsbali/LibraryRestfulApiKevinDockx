@@ -197,7 +197,7 @@ namespace Library.Api.Controllers
          return Ok(linkedResourceToReturn);
       }
 
-      [HttpPost]
+      [HttpPost(Name = "CreateAuthor")]
       public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
       {
          if (author == null)
